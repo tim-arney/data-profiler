@@ -112,6 +112,7 @@ class DataProfile:
         DataFrame.
     """
 
+
     ###########################################################################
     #                          DUNDER/MAGIC METHODS                           #
     ###########################################################################
@@ -1001,6 +1002,7 @@ class DataProfile:
         """
         return self._df
     
+    
     ###########################################################################
     #                            INTERNAL METHODS                             #
     ###########################################################################
@@ -1490,13 +1492,13 @@ class DataProfile:
     
 if __name__ == '__main__':
     
-    ###
+    ####
     # Run using command line arguments:
     #
     # $ python3 <input_data_file> <output_profile_file>
     #
     # If no output file is given a default one will be created
-    #
+    ##
     
     if len(sys.argv) > 1:
         dp = DataProfile(sys.argv[1])
@@ -1509,9 +1511,9 @@ if __name__ == '__main__':
             
         sys.exit(0)
 
-    ###
+    ####
     # Or run directly:
-    #
+    ##
     
     # file = 'data/sample_data.csv'
     # dp = DataProfile(file) 

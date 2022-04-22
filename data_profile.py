@@ -1048,6 +1048,8 @@ class DataProfile:
                     self._dtype[attribute] = 'integer'
                 else:
                     self._dtype[attribute] = 'float'
+            elif dtype == 'int64':
+                self._dtype[attribute] = 'integer'
             else:
                 self._dtype[attribute] = 'string'
     

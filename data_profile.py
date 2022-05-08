@@ -32,6 +32,18 @@ class DataProfile:
     
     Methods
     -------
+    categorical_validation(self, attribute: str, category_list: list, 
+                           invalid_rows: int = 5) -> None:
+        Assess the validity of a categorical attribute given a list of valid
+        categorical values.
+        
+    categoricals_validation(self, categorical_dict: dict,
+                            invalid_rows: int = 5) -> None:
+        A convenience wrapper function around 'categorical_validation' that
+        takes a dictionary of attibute - category list pairs and iteratively
+        validates each attribute.  The dictionary should take the form:
+            { attribute_i: [value_1, ..., value_n] }
+            
     datetime_validation(self, attribute: str, dt_format: str = '%d/%m/%Y', 
                         from_dt: Optional[str] = None, to_dt: Optional[str] = None, 
                         invalid_rows: int = 5) -> None
@@ -619,12 +631,7 @@ class DataProfile:
         print(rule_str)
         
         value_df = self._df[attribute].dropna()
-        
-        # if is_numeric_dtype(value_df):
-        #     value_df = value_df.astype(str)
-            
         valid_df = value_df.apply(self._check_int , args=(min_val,  max_val))
-        
         self._validity(attribute, value_df, valid_df, invalid_rows)
         
         if not self._save_in_progress:
@@ -691,12 +698,7 @@ class DataProfile:
         print(rule_str)
         
         value_df = self._df[attribute].dropna()
-        
-        # if is_numeric_dtype(value_df):
-        #     value_df = value_df.astype(str)
-            
         valid_df = value_df.apply(self._check_float , args=(min_val,  max_val))
-        
         self._validity(attribute, value_df, valid_df, invalid_rows)
         
         if not self._save_in_progress:
@@ -777,12 +779,7 @@ class DataProfile:
         print(rule_str)
         
         value_df = self._df[attribute].dropna()
-        
-        # if is_numeric_dtype(value_df):
-        #     value_df = value_df.astype(str)
-            
         valid_df = value_df.apply(self._check_datetime , args=(dt_format, start, end))
-        
         self._validity(attribute, value_df, valid_df, invalid_rows)
         
         if not self._save_in_progress:
@@ -795,6 +792,79 @@ class DataProfile:
             
             if cmd not in self._profile_history:
                 self._profile_history.append(cmd)
+    
+    
+    def categorical_validation(self, attribute: str, category_list: list, invalid_rows: int = 5) -> None:
+        """
+        Assess the validity of a categorical attribute given a list of valid
+        categorical values.
+
+        Parameters
+        ----------
+        attribute : str
+            The attribute to validate.
+        category_list : list
+            The list of valid categorical values.
+        invalid_rows : int, optional
+            The number of invalid values to show. If set to <= 0 then all
+            invalid values will be displayed. The default is 5.
+
+        Returns
+        -------
+        None
+
+        """
+        if not self._attribute_exists(attribute):
+            return
+        
+        if len(category_list) == 0:
+            return
+        
+        DataProfile._heading(f'{attribute} Validation')
+        DataProfile._subheading('Rule', all_caps=False, leading_line=False)
+        category_string = ', '.join([str(cat) for cat in category_list])
+        print(f" value in [{category_string}]")
+        
+        value_df = self._df[attribute].dropna()
+        valid_df = value_df.apply(lambda x: x in category_list)
+        self._validity(attribute, value_df, valid_df, invalid_rows)
+            
+        if not self._save_in_progress:
+            cmd = {'cmd': 'categorical_validation',
+                   'attribute': attribute,
+                   'category_list': category_list,
+                   'invalid_rows': invalid_rows}
+            
+            if cmd not in self._profile_history:
+                self._profile_history.append(cmd)
+       
+        
+    def categoricals_validation(self, categorical_dict: dict, invalid_rows: int = 5) -> None:
+        """
+        A convenience wrapper function around 'categorical_validation' that
+        takes a dictionary of attibute - category list pairs and iteratively
+        validates each attribute.  The dictionary should take the form:
+            { attribute_i: [value_1, ..., value_n] }
+
+        Parameters
+        ----------
+        categorical_dict : dict
+            A dictionary keyed on attribute name with each value being a list
+            of valid categorical values.
+        invalid_rows : int, optional
+            The number of invalid values to show. If set to <= 0 then all
+            invalid values will be displayed. The default is 5.
+
+        Returns
+        -------
+        None
+
+        """
+        if len(categorical_dict) == 0:
+            return
+        
+        for attribute, category_list in categorical_dict.items():
+            self.categorical_validation(attribute, category_list, invalid_rows)
             
             
     def email_validation(self, attribute: str, invalid_rows: int = 5) -> None:
@@ -1037,6 +1107,8 @@ class DataProfile:
         self._num_distinct = defaultdict(int)
         self._num_missing = defaultdict(int)
         self._num_valid = defaultdict(int)
+        
+        self._df = self._df.replace(r'^\s*$', np.nan, regex=True)
         
         for attribute in self._attributes:
             dtype = self._df[attribute].dtype

@@ -1053,10 +1053,85 @@ class DataProfile:
                                                min_length=cmd['min_length'], 
                                                max_length=cmd['max_length'], 
                                                invalid_rows=cmd['invalid_rows'])
+                    elif command == 'categorical_validation':
+                        self.categorical_validation(attribute=cmd['attribute'],
+                                                    category_list=cmd['category_list'],
+                                                    invalid_rows=cmd['invalid_rows'])
                 
         self._save_in_progress = False
         
         print(f"Profile saved to:  {log_file}")
+        
+            
+    def save_summary(self, file: Optional[str] = None) -> pd.DataFrame:
+        """
+        Saves the data quality summary as a CSV file.  Data quality measures 
+        include completeness, uniqueness, and validity where an attribute has 
+        been validated.  Returns a copy of the summary as a DataFrame.
+
+        Parameters
+        ----------
+        file : Optional[str], optional
+            The name of the file to write. If none is provided it will default
+            to the name of the data file appended with '_summary.csv'.  
+            The default is None.
+
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame containing a record for each attribute along with its
+            data quality measures.
+
+        """
+        if file is None:
+            summary_file_name = f'{self._file_path.stem}_summary.csv'
+            summary_file = self._file_path.parent.resolve() / summary_file_name
+        else:
+            summary_file = Path(file)
+            
+            if not summary_file.parent.is_dir():
+                log_file.parent.mkdir()
+        
+        records = []
+        
+        if len(self._num_valid) == 0:
+            dimensions = {
+                'Observations': self._num_observations,
+                'Distinct': self._num_distinct,
+                'Missing': self._num_missing
+                }
+        else:
+            dimensions = {
+                'Observations': self._num_observations,
+                'Distinct': self._num_distinct,
+                'Valid': self._num_valid,
+                'Missing': self._num_missing
+                }
+            
+        for attribute in self._attributes:
+            record = {
+                'Attribute': attribute,
+                'Type': self._dtype[attribute]
+                }
+            
+            for label, dimension in dimensions.items():
+                if attribute in dimension:
+                    record[label] = dimension[attribute]
+                    
+            records.append(record)
+        
+        df = pd.DataFrame.from_records(records)
+        df['Completeness'] = df['Observations'] / self._num_records
+        df['Uniqueness'] = df['Distinct'] / df['Observations']
+        
+        if 'Valid' in df.columns:
+            df.insert(4, 'Valid', df.pop('Valid'))
+            df['Validity'] = df['Valid'] / df['Observations']
+        
+        df.to_csv(summary_file, index=False)
+        print(f"Summary saved to:  {summary_file}")
+        
+        return df
         
             
     def get_dataframe(self) -> pd.DataFrame:
@@ -1111,6 +1186,16 @@ class DataProfile:
         self._df = self._df.replace(r'^\s*$', np.nan, regex=True)
         
         for attribute in self._attributes:
+            
+            # # START REMOVE
+            # tmp = self._df[attribute].dropna()
+            
+            # if DataProfile._is_string_series(tmp):
+            #     tmp = tmp.str.lstrip("-")
+            #     if tmp.str.isnumeric().all():
+            #         self._df[attribute] = pd.to_numeric(self._df[attribute], errors='ignore')
+            # # END REMOVE
+            
             dtype = self._df[attribute].dtype
             
             if dtype == 'float64':
@@ -1557,7 +1642,20 @@ class DataProfile:
         
         size_string = f"{s} {units[i]}"
         
-        return size_string        
+        return size_string   
+
+        
+    # src: https://stackoverflow.com/a/67001213
+    @staticmethod
+    def _is_string_series(s : pd.Series):
+        if isinstance(s.dtype, pd.StringDtype):
+            # The series was explicitly created as a string series (Pandas>=1.0.0)
+            return True
+        elif s.dtype == 'object':
+            # Object series, check each value
+            return all((v is None) or isinstance(v, str) for v in s)
+        else:
+            return False
     
 
 ###########################################################################

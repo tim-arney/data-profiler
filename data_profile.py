@@ -209,7 +209,18 @@ class DataProfile:
         print(f'Memory usage   {DataProfile._convert_size(mem)}')
         print(f"Attributes     {self._num_attributes}")
         print(f"Observations   {self._num_records:,}")
-        print(f"Duplicate rows {self._num_duplicates:,}")
+        
+        if self._num_duplicates == 0:
+            print(f"Duplicate rows {self._num_duplicates:,}")
+        else:
+            duplicate_prt = self._num_duplicates / self._num_records
+            print(f"Duplicate rows {self._num_duplicates:,} ({duplicate_prt:.2%})")
+            
+        if self._num_missing_vals == 0:
+            print(f"Missing values {self._num_missing_vals:,}")
+        else:
+            missing_prt = self._num_missing_vals / (self._num_records * self._num_attributes)
+            print(f"Missing values {self._num_missing_vals:,} ({missing_prt:.2%})")
         
         if not self._save_in_progress:
             cmd = {'cmd': 'preamble'}
@@ -1063,7 +1074,7 @@ class DataProfile:
         print(f"Profile saved to:  {log_file}")
         
             
-    def save_summary(self, file: Optional[str] = None) -> pd.DataFrame:
+    def save_summary(self, file: Optional[str] = None) -> None:
         """
         Saves the data quality summary as a CSV file.  Data quality measures 
         include completeness, uniqueness, and validity where an attribute has 
@@ -1078,9 +1089,7 @@ class DataProfile:
 
         Returns
         -------
-        pd.DataFrame
-            A DataFrame containing a record for each attribute along with its
-            data quality measures.
+        None
 
         """
         if file is None:
@@ -1092,6 +1101,37 @@ class DataProfile:
             if not summary_file.parent.is_dir():
                 log_file.parent.mkdir()
         
+        
+        df = self.get_summary()
+        df.to_csv(summary_file, index=False)
+        print(f"Summary saved to:  {summary_file}")
+        
+            
+    def get_dataframe(self) -> pd.DataFrame:
+        """
+        A convenience function to extract the pandas DataFrame from the
+        DataProfile object.
+
+        Returns
+        -------
+        pd.DataFrame
+            The data.
+
+        """
+        return self._df
+    
+    
+    def get_summary(self) -> pd.DataFrame:
+        """
+        A convenience function to generate and return summary information as
+        a pandas DataFrame
+
+        Returns
+        -------
+        pd.DataFrame
+            The summary.
+
+        """
         records = []
         
         if len(self._num_valid) == 0:
@@ -1128,24 +1168,7 @@ class DataProfile:
             df.insert(4, 'Valid', df.pop('Valid'))
             df['Validity'] = df['Valid'] / df['Observations']
         
-        df.to_csv(summary_file, index=False)
-        print(f"Summary saved to:  {summary_file}")
-        
         return df
-        
-            
-    def get_dataframe(self) -> pd.DataFrame:
-        """
-        A convenience function to extract the pandas DataFrame from the
-        DataProfile object.
-
-        Returns
-        -------
-        pd.DataFrame
-            The data.
-
-        """
-        return self._df
     
     
     ###########################################################################
@@ -1187,14 +1210,14 @@ class DataProfile:
         
         for attribute in self._attributes:
             
-            # # START REMOVE
-            # tmp = self._df[attribute].dropna()
+            # START REMOVE
+            tmp = self._df[attribute].dropna()
             
-            # if DataProfile._is_string_series(tmp):
-            #     tmp = tmp.str.lstrip("-")
-            #     if tmp.str.isnumeric().all():
-            #         self._df[attribute] = pd.to_numeric(self._df[attribute], errors='ignore')
-            # # END REMOVE
+            if DataProfile._is_string_series(tmp):
+                tmp = tmp.str.lstrip("-")
+                if tmp.str.isnumeric().all():
+                    self._df[attribute] = pd.to_numeric(self._df[attribute], errors='ignore')
+            # END REMOVE
             
             dtype = self._df[attribute].dtype
             
@@ -1215,6 +1238,7 @@ class DataProfile:
             self._num_missing[attribute] = self._num_records - self._num_observations[attribute]
             
         self._num_duplicates = self._df.duplicated().sum()
+        self._num_missing_vals = self._df.isna().sum().sum()
     
     
     def _describe(self, attribute=None, freq_rows=5):

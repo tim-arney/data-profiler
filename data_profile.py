@@ -155,6 +155,8 @@ class DataProfile:
         
         if self._file_ext == '.csv':
             self._df = self._read_csv(self._file_path, header)
+        elif self._file_ext == '.tsv':
+            self._df = self._read_tsv(self._file_path, header)
         else:
             print(f"ERROR: File type '{self._file_ext}' not supported, quitting...")
             sys.exit(0)
@@ -471,7 +473,47 @@ class DataProfile:
                    
             if cmd not in self._profile_history:
                 self._profile_history.append(cmd)
+     
+    
+    def correlations(self, min_threshold: float = 0.0, max_threshold: float = 1.0,
+                     method: str ='pearson', min_periods: int = 1):
+        corr = self._df.corr(method=method, min_periods=min_periods)
+        corr.dropna(axis=0, how='all', inplace=True)
+        corr.dropna(axis=1, how='all', inplace=True)
+        num_attributes = len(corr)
         
+        if num_attributes == 0:
+            return
+        
+        heading_printed = False
+        
+        for i in range(0, num_attributes-1):
+            attribute = corr.index[i]
+            row = corr.iloc[i]
+            
+            table = PrettyTable()
+            table.field_names = ["Attribute", "Correlation"]
+            table.align["Correlation"] = "r"
+            show_table = False
+            
+            for j in range(i+1, num_attributes):
+                correlated_attribute = row.index[j]
+                correlation = row[j]
+                
+                if min_threshold <= abs(correlation) <= max_threshold:
+                    table.add_row([correlated_attribute, f'{correlation:.2f}'])
+                    show_table = True
+            
+            if show_table:
+                if not heading_printed:
+                    DataProfile._heading('Correlations')
+                    heading_printed = True
+                    
+                DataProfile._subheading(attribute, all_caps=False)
+                print(table)
+                
+        return corr
+                
         
     def string_validation(self, attribute: str, letters: bool = True, 
                           whitespace: bool = False, digits: bool = False, 
@@ -1183,6 +1225,22 @@ class DataProfile:
             header = None
             
         df = pd.read_csv(file_path, header=header)
+    
+        if header == None:
+            names = {i: f'column_{i+1}' for i in range(len(df.columns))}
+            df.rename(columns=names, inplace=True)
+    
+        return df
+    
+    
+    def _read_tsv(self, file_path, header):
+        
+        if header:
+            header = 'infer'
+        else:
+            header = None
+            
+        df = pd.read_csv(file_path, header=header, sep='\t')
     
         if header == None:
             names = {i: f'column_{i+1}' for i in range(len(df.columns))}

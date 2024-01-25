@@ -1408,7 +1408,7 @@ class DataProfile:
             # table.field_names = ["Index", "Value"]
             # # table.align["Value"] = "r"
             
-            for index, value in invalid_df[attribute].iteritems():
+            for index, value in invalid_df[attribute].items():
                 # table.add_row([index, value])
                 print(f'{value}')
                 
@@ -1432,7 +1432,7 @@ class DataProfile:
         table.field_names = ["Measure", "Value"]
         table.align["Value"] = "r"
         
-        for measure, value in desc_df.iteritems():
+        for measure, value in desc_df.items():
             table.add_row([measure, f'{value:,.2f}'])
             
         print(table)
@@ -1469,7 +1469,7 @@ class DataProfile:
         pct_width = len(f'{max_freq // obs }') + 3
         
         if show_all:
-            for value, freq in freq_df.iteritems():
+            for value, freq in freq_df.items():
                 pct_freq = round(freq / obs * 100, 2)
                 
                 freq_str = f'{freq:,}'
@@ -1480,7 +1480,7 @@ class DataProfile:
             print(f'Showing the {rows} most and least frequent string lengths:')
             print()
             
-            for value, freq in freq_df.iloc[:rows].iteritems():
+            for value, freq in freq_df.iloc[:rows].items():
                 pct_freq = round(freq / obs * 100, 2)
                 
                 freq_str = f'{freq:,}'
@@ -1490,7 +1490,7 @@ class DataProfile:
         
             table.add_row(['···', '···', '···'])
             
-            for value, freq in freq_df.iloc[-rows:].iteritems():
+            for value, freq in freq_df.iloc[-rows:].items():
                 pct_freq = round(freq / obs * 100, 2)
                 
                 freq_str = f'{freq:,}'
@@ -1530,7 +1530,7 @@ class DataProfile:
         pct_width = len(f'{max_freq // obs }') + 3
         
         if show_all:
-            for value, freq in freq_df.iteritems():
+            for value, freq in freq_df.items():
                 pct_freq = round(freq / obs * 100, 2)
                 
                 freq_str = f'{freq:,}'
@@ -1541,7 +1541,7 @@ class DataProfile:
             print(f'Showing the {rows} most and least frequent values:')
             print()
             
-            for value, freq in freq_df.iloc[:rows].iteritems():
+            for value, freq in freq_df.iloc[:rows].items():
                 pct_freq = round(freq / obs * 100, 2)
                 
                 freq_str = f'{freq:,}'
@@ -1551,7 +1551,7 @@ class DataProfile:
         
             table.add_row(['···', '···', '···'])
             
-            for value, freq in freq_df.iloc[-rows:].iteritems():
+            for value, freq in freq_df.iloc[-rows:].items():
                 pct_freq = round(freq / obs * 100, 2)
                 
                 freq_str = f'{freq:,}'

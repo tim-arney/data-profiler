@@ -1749,7 +1749,7 @@ if __name__ == '__main__':
     ####
     # Run using command line arguments:
     #
-    # $ python3 <input_data_file> <output_profile_file>
+    # $ python3 data_profile.py <input_data_file> <output_profile_file>
     #
     # If no output file is given a default one will be created
     ##
@@ -1773,6 +1773,3 @@ if __name__ == '__main__':
     # dp = DataProfile(file) 
     # dp.describe()
     # dp.save()
-
-   
-    
